@@ -9,7 +9,11 @@ import random
 class Graph:
     def __init__(self, args):
         self.args = args
-        if self.args.is_dir:
+
+        if self.args.tree:
+            print("Making graph from tree.")
+            self._G = self.parse_tree(self.args.edge_list)
+        elif self.args.is_dir:
             print("Making directed.")
             self._G = nx.read_edgelist(self.args.edge_list, nodetype=int, create_using=nx.DiGraph)
         else:
@@ -28,8 +32,6 @@ class Graph:
         mapping = dict(zip(self._G.nodes, range(1,self.num_nodes+1)))
         self._G = nx.relabel_nodes(self._G, mapping)
         
-
-
     def add_edge(self, src_id, dst_id):
         if not isinstance(src_id, int):
             src_id = int(src_id)
@@ -89,7 +91,7 @@ class Graph:
         Args:
             size: number of samples.
         """
-        return random.sample(self._G.edges, size)
+        return random.sample(list(self._G.edges), size)
 
     def copy(self):
         return Graph(self.args)
@@ -160,6 +162,36 @@ class Graph:
                     line += "\n"
                 f.write(line)
 
+    def write_tree(self, tree_filename):
+        with open(tree_filename, "w") as f:
+            edges = list(self._G.edges())
+            for i, edge in enumerate(edges):
+                line = f"{edge[0] - 1},{self._G.nodes[edge[0]]['x']},{self._G.nodes[edge[0]]['y']}|{edge[1] - 1},{self._G.nodes[edge[1]]['x']},{self._G.nodes[edge[1]]['y']}"
+                if i + 1 < len(edges):
+                    line += "\n"
+                f.write(line)
+
     def single_source_shortest_path(self, node_id: int, cutoff=50):
         return nx.single_source_shortest_path_length(self._G, node_id, cutoff=cutoff)
+
+    def nx_viz(self):
+        pos = nx.shell_layout(self._G)
+        for n in self._G.nodes():
+            pos[n] = np.array([self._G.nodes[n]['x'], self._G.nodes[n]['y']])
         
+        nx.draw(self._G, pos, with_labels=False, node_size=5)
+        plt.show()
+
+    def parse_tree(self, tree_file):
+        G = nx.Graph()
+        G.add_node(0, x=0.0, y=0.0)
+        with open(tree_file) as tree:
+            for line in tree:
+                ends = line.split('|')
+                (i, x, y) = tuple(map(float, ends[0].split(',')))
+                G.add_node(int(i), x=x, y=y)
+                a = int(ends[0].split(',')[0])
+                b = int(ends[1].split(',')[0])
+                G.add_edge(a, b)
+
+        return G

@@ -94,6 +94,9 @@ class Environment:
 
         return edge
 
+    def del_orphans(self):
+        self._graph.remove_nodes_from(list(nx.isolates(self._graph)))
+
     def create_state(self, subgraph_len: int, T: int, t: int, num_preprune: int = 0):
         """Create the current state for the episode."""
         # Clip subgraph_len to valid range

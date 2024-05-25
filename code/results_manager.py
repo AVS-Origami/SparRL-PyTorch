@@ -7,6 +7,8 @@ from agents.random_agent import RandomAgent
 from agents.rl_agent import RLAgent
 from conf import *
 
+import copy
+
 class ResultsManager:
     def __init__(self, args, agent, env):
         self.args = args
@@ -18,6 +20,7 @@ class ResultsManager:
 
     
     def eval(self):     
+        print()
         final_rewards = self.eval_agent(self.agent)
         spsp_str = ""
         if self.args.obj == "spsp":
@@ -30,26 +33,64 @@ class ResultsManager:
             for dist, prob in sorted(self._spsp_freq.items()):
                 spsp_str += "{}: {}\n".format(dist, prob)
                 total_prob += prob
-        print("spsp_str:", spsp_str)
-        print("spsp_freq", self._spsp_freq)
-
-        print("final_rewards", final_rewards)
-        print("sparrl avg", sum(final_rewards) / len(final_rewards))
-        final_rewards_rand = self.eval_agent(self.rand_agent)
         
-        print("avg rand", sum(final_rewards_rand) / len(final_rewards_rand))
+        #print("spsp_str:", spsp_str)
+        #print("spsp_freq", self._spsp_freq)
+
+        #print("final_rewards", final_rewards)
+        #print("sparrl avg", sum(final_rewards) / len(final_rewards))
+
+        best_reward = 0.0
+        for key in final_rewards.keys():
+            if key > best_reward:
+                best_reward = key
+
+        print()
+        print("SparRL best reward:", best_reward)
+        print("Number of edges:", final_rewards[best_reward].get_num_edges())
+        
+        if self.env.args.spar_edge_list != "":
+            final_rewards[best_reward].write_edge_list(self.env.args.spar_edge_list)
+            print("Wrote pruned graph to", self.env.args.spar_edge_list)
+
+        if self.env.args.spar_tree != "":
+            final_rewards[best_reward].write_tree(self.env.args.spar_tree)
+            print("Wrote pruned tree to", self.env.args.spar_tree)
+
+        if self.env.args.viz:
+            self.env._graph.nx_viz()
+            final_rewards[best_reward].nx_viz()
+
+        print()
+
+        final_rewards_rand = self.eval_agent(self.rand_agent)
+
+        best_reward_rand = 0.0
+        for key in final_rewards_rand.keys():
+            if key > best_reward_rand:
+                best_reward_rand = key
+
+        print()
+        print("Random best reward:", best_reward_rand)
+        print("Number of edges:", final_rewards_rand[best_reward_rand].get_num_edges())
+        print()
+
+        if self.env.args.viz:
+            final_rewards_rand[best_reward_rand].nx_viz()
+        
+        #print("avg rand", sum(final_rewards_rand) / len(final_rewards_rand))
         #print("final_rewards_rand", final_rewards_rand)
         #self.plot_results(final_rewards)
         
     def eval_agent(self, agent):
-        final_rewards = []
+        final_rewards = {}
         self.env.agent = agent
         # self.env.preprune(self.args.T_max)
         for i in range(self.args.episodes):
             if isinstance(agent, RLAgent):
-                final_rewards.append(self.run_rl_eval(agent, self.args.T_max))
+                final_rewards.update(self.run_rl_eval(agent, self.args.T_max))
             else:
-                final_rewards.append(self.run_episode(agent, self.args.T_max))
+                final_rewards.update(self.run_episode(agent, self.args.T_max))
 
             self.env.reset()
 
@@ -115,8 +156,9 @@ class ResultsManager:
                 self.env.prune_edge(edge_idx, state.subgraph[i:i+1])
 
         self.args.subgraph_len = org_subgraph_len
-        print("E:", self.env._graph.get_num_edges())
-        return self.get_final_reward()
+        #print("E:", self.env._graph.get_num_edges())
+        #self.env.del_orphans()
+        return {self.get_final_reward(): copy.deepcopy(self.env._graph)}
 
 
 
@@ -133,7 +175,8 @@ class ResultsManager:
 
             self.env.prune_edge(edge_idx, state.subgraph)
         
-        return self.get_final_reward()
+        #print("E:", self.env._graph.get_num_edges())
+        return {self.get_final_reward(): copy.deepcopy(self.env._graph)}
 
 
     def get_final_reward(self):

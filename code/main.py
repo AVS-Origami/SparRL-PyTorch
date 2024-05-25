@@ -92,8 +92,12 @@ if __name__ == "__main__":
     graph_args = parser.add_argument_group("Graph")
     graph_args.add_argument("--edge_list", required=True,
             help="Filename of edge list of the graph.")
+    graph_args.add_argument("--tree", action="store_true",
+            help="Use tree format for input instead of edge list.")
     graph_args.add_argument("--is_dir", action="store_true",
             help="Indicates the graph should be directed.")
+    graph_args.add_argument("--viz", action="store_true",
+            help="Visualize the best pruned graphs.")
 
     env_args = parser.add_argument_group("Environment")
     env_args.add_argument("--obj", default="spearman",
@@ -194,6 +198,8 @@ if __name__ == "__main__":
 
     eval_args.add_argument("--spar_edge_list", default="",
             help="Write out sparsified edge list.")
+    eval_args.add_argument("--spar_tree", default="",
+            help="Write out sparsified tree.")
 
 
     eval_args.add_argument("--eval", action="store_true",
