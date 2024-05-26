@@ -158,13 +158,17 @@ class Graph:
             edges = list(self._G.edges())
             for i, edge in enumerate(edges):
                 line = f"{edge[0] - 1} {edge[1] - 1}"
-                if i + 1< len(edges):
+                if i + 1 < len(edges):
                     line += "\n"
                 f.write(line)
 
     def write_tree(self, tree_filename):
+        def sort_fn(e):
+            return e[1]
+
         with open(tree_filename, "w") as f:
             edges = list(self._G.edges())
+            edges.sort(key=sort_fn)
             for i, edge in enumerate(edges):
                 line = f"{edge[0] - 1},{self._G.nodes[edge[0]]['x']},{self._G.nodes[edge[0]]['y']}|{edge[1] - 1},{self._G.nodes[edge[1]]['x']},{self._G.nodes[edge[1]]['y']}"
                 if i + 1 < len(edges):
@@ -175,9 +179,14 @@ class Graph:
         return nx.single_source_shortest_path_length(self._G, node_id, cutoff=cutoff)
 
     def nx_viz(self):
-        pos = nx.shell_layout(self._G)
+        pos = {}
+        for n in self._G.edges():
+            pos[n[0]] = np.array([self._G.nodes[n[0]]['x'], self._G.nodes[n[0]]['y']])
+            pos[n[1]] = np.array([self._G.nodes[n[1]]['x'], self._G.nodes[n[1]]['y']])
+
         for n in self._G.nodes():
-            pos[n] = np.array([self._G.nodes[n]['x'], self._G.nodes[n]['y']])
+            if not n in pos.keys():
+                pos[n] = np.array([0.0, 0.0])
         
         nx.draw(self._G, pos, with_labels=False, node_size=5)
         plt.show()
