@@ -153,7 +153,7 @@ class ResultsManager:
             for i, edge_idx in enumerate(edge_idxs):
                 if num_left >= 1 and t + 1 == num_batches and i > num_left:
                     break
-                self.env.prune_edge(edge_idx, state.subgraph[i:i+1])
+                self.env.prune_node(edge_idx, state.subgraph[i:i+1])
 
         self.args.subgraph_len = org_subgraph_len
         #print("E:", self.env._graph.get_num_edges())
@@ -173,7 +173,7 @@ class ResultsManager:
             else:    
                 edge_idx = agent(state)
 
-            self.env.prune_edge(edge_idx, state.subgraph)
+            self.env.prune_node(edge_idx, state.subgraph)
         
         #print("E:", self.env._graph.get_num_edges())
         return {self.get_final_reward(): copy.deepcopy(self.env._graph)}
@@ -182,6 +182,9 @@ class ResultsManager:
     def get_final_reward(self):
         if self.args.obj == "spearman":
             return self.env.reward_man.compute_sparmanr()
+        elif self.args.obj == "rrt":
+            import random
+            return random.random()
         elif self.args.obj == "com":
             return self.env.reward_man._com_detect.ARI_louvain()
         elif self.args.obj == "spsp":

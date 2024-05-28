@@ -40,6 +40,13 @@ class Graph:
 
         assert not self._G.has_edge(src_id, dst_id)
         self._G.add_edge(src_id, dst_id)
+
+    def add_node(self, src_id):
+        if not isinstance(src_id, int):
+            src_id = int(src_id)
+
+        assert not self._G.has_node(src_id)
+        self._G.add_node(src_id)
     
     def del_edge(self, src_id, dst_id):
         if not isinstance(src_id, int):
@@ -49,10 +56,21 @@ class Graph:
 
         assert self._G.has_edge(src_id, dst_id)
         self._G.remove_edge(src_id, dst_id)
+
+    def del_node(self, src_id):
+        if not isinstance(src_id, int):
+            src_id = int(src_id)
+
+        assert self._G.has_node(src_id)
+        self._G.remove_node(src_id)
     
     def get_num_edges(self):
         # Get the number of edges in the graph
         return self._G.number_of_edges()
+
+    def get_num_nodes(self):
+        # Get the number of nodes in the graph
+        return self._G.number_of_nodes()
 
     def get_page_ranks(self):
         return nx.pagerank(self._G, tol=1e-4)
@@ -92,6 +110,14 @@ class Graph:
             size: number of samples.
         """
         return random.sample(list(self._G.edges), size)
+
+    def sample_nodes(self, size: int) -> list:
+        """Sample nodes from the graph."
+        
+        Args:
+            size: number of samples.
+        """
+        return random.sample(list(self._G.nodes), size)
 
     def copy(self):
         return Graph(self.args)

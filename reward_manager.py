@@ -30,6 +30,8 @@ class RewardManager:
             self._setup_com()
         elif self.args.obj == "spearman":
             self._setup_spearman()
+        elif self.args.obj == "rrt":
+            self._setup_rrt()
         else:
             raise Exception("Invalid Objective.")
             # By default use page rank
@@ -223,6 +225,10 @@ class RewardManager:
     def _setup_spearman(self):
         self._org_pr = list(self._graph.get_page_ranks().values())
         self._prev_spearmanr = 1.0
+
+    def _setup_rrt(self):
+        self._org_tr = list(self._graph.get_page_ranks().values())
+        self._prev_tr = 1.0
 
 
         

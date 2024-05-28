@@ -15,6 +15,7 @@ class Environment:
         self.agent = agent
         self._graph = graph
         self._org_num_edges = self._graph.get_num_edges()
+        self._org_num_nodes = self._graph.get_num_nodes()
         #self.args.T_max = min(self._org_num_edges, self.args.T_max) 
 
         # Setup the RewardManager to manage rewards 
@@ -22,6 +23,7 @@ class Environment:
         self.reward_man.setup()
         
         self._removed_edges = set()
+        self._removed_nodes = set()
 
         self._device = device
         print("self._device", self._device)
@@ -33,10 +35,15 @@ class Environment:
     def reset(self):
         """Reset environment for next episode."""
         # Restore pruned edges to graph
+
+        for node in self._removed_nodes:
+            self._graph.add_node(node)
+        
         for edge in self._removed_edges:
             self._graph.add_edge(edge[0], edge[1])
 
         self._removed_edges = set()
+        self._removed_nodes = set()
 
         self.agent.reset()
         self.reward_man.reset()
@@ -66,7 +73,7 @@ class Environment:
         Returns:
             the list of edges in a subgraph
         """
-        sampled_edges = self._graph.sample_edges(subgraph_len)
+        sampled_edges = self._graph.sample_nodes(subgraph_len) # Changed this to sample NODES instead of EDGES
 
         return sampled_edges
 
@@ -94,6 +101,30 @@ class Environment:
 
         return edge
 
+    def prune_node(self, node_idx: int, subgraph: torch.Tensor):
+        """Prune a node from the subgraph and the graph."""
+        node = [subgraph[0, 2*node_idx], subgraph[0, 2*node_idx + 1]]
+        
+        # Shift back to original node ids
+        #edge = (int(edge[0] - 1), int(edge[1] - 1))
+        node = int(node[0])
+
+        if self.args.obj == "spsp" and not self.args.eval:
+            self.reward_man.sample_spsp_dists(edge)
+
+        if node < 0:
+            raise Exception(f"INVALID NODE {node} WITH IDX {node_idx}")
+            #assert edge[0] > 0 and edge[1] > 0 
+
+        # Remove from graph
+        for e in self._graph._G.edges(node):
+            self._removed_edges.add(e)
+
+        self._removed_nodes.add(node)
+        self._graph.del_node(node)
+
+        return node
+
     def del_orphans(self):
         self._graph.remove_nodes_from(list(nx.isolates(self._graph)))
 
@@ -114,16 +145,15 @@ class Environment:
         # Create global statistics
         prune_left = np.log(T-t)
         #num_edges_left = np.log(self._graph.get_num_edges())
-        num_edges_left = self._graph.get_num_edges()/self._org_num_edges
-        preprune_pct = num_preprune / self._org_num_edges
+        num_edges_left = self._graph.get_num_nodes()/self._org_num_nodes
+        preprune_pct = num_preprune / self._org_num_nodes
         #global_stats = torch.tensor([[[prune_left, num_edges_left, preprune_pct]]], device=self._device, dtype=torch.float32)
         global_stats = torch.tensor([[[num_edges_left]]], device=self._device, dtype=torch.float32)
         
         # Create local node statistics
         node_ids = []
         for e in subgraph:
-            node_ids.append(e[0])
-            node_ids.append(e[1])
+            node_ids.append(e)
 
         # Get node degrees
         degrees = self._graph.degree(node_ids)
