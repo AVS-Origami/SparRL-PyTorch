@@ -50,7 +50,8 @@ class AgentManager:
             }        
 
     def save(self):
-        self._rl_agent.save()
+        state = self._results_man.env.create_state(self.args.subgraph_len, 250, 27)
+        self._rl_agent.save(state)
         with open(self._man_file, "w") as f:
             json.dump(self._agent_man_dict, f)
         

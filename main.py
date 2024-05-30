@@ -18,6 +18,7 @@ def main(args):
     # print("graph.num_nodes", graph.num_nodes)
 
     if args.expert_episodes > 0:
+        print("Using expert agent.")
         agent = RLAgent(args, memory, graph.num_nodes, ExpertAgent(args, graph))
     else:
         agent = RLAgent(args, memory, graph.num_nodes)

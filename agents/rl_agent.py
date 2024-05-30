@@ -134,7 +134,7 @@ class RLAgent(Agent):
             # Add episode experiences
             self._add_stored_exs()
 
-    def save(self):
+    def save(self, state: State):
         """Save the models."""
         model_dict = {
             "sparrl_net" : self._sparrl_net.state_dict(),
@@ -143,6 +143,10 @@ class RLAgent(Agent):
         }
 
         torch.save(model_dict, self._model_file)
+        self._sparrl_net.eval()
+        example = [[state.subgraph, state.global_stats, state.local_stats, state.mask, state.neighs]]
+        jit_save = torch.jit.trace(self._sparrl_net, example)
+        jit_save.save(os.path.join(self.args.save_dir, "model.pt"))
 
         with open(self._train_dict_file, "w") as f:
             json.dump(self._train_dict, f)

@@ -80,9 +80,6 @@ class Environment:
     def prune_edge(self, edge_idx: int, subgraph: torch.Tensor):
         """Prune an edge from the subgraph and the graph."""
         edge = [subgraph[0, 2*edge_idx], subgraph[0, 2*edge_idx + 1]]
-        
-                    
-
 
         # Shift back to original node ids
         #edge = (int(edge[0] - 1), int(edge[1] - 1))
@@ -132,6 +129,7 @@ class Environment:
         """Create the current state for the episode."""
         # Clip subgraph_len to valid range
         subgraph_len = min(subgraph_len, self._graph.get_num_edges())
+        #print("subgraph", subgraph_len)
 
         # Sanity-check
         if subgraph_len <= 0:
@@ -229,9 +227,10 @@ class Environment:
             subgraph = self.sample_subgraph(num_preprune)
 
         # Prune the edges
-        for edge in subgraph:
-            self._removed_edges.add(edge)
-            self._graph.del_edge(edge[0], edge[1])
+        for node in subgraph:
+            for edge in self._graph._G.edges(node):
+                self._removed_edges.add(edge) # CHANGED BECAUSE SUBGRAPH CONTAINS NODES NOW
+            self._graph.del_node(node)  # CHANGED FROM EDGE TO NODE
 
         return num_preprune
 
@@ -282,7 +281,7 @@ class Environment:
 
 
             # Prune the edge
-            pruned_edge = self.prune_edge(edge_idx, state.subgraph)
+            pruned_edge = self.prune_node(edge_idx, state.subgraph) # CHANGED TO PRUNE NODE
 
             # Compute the reward for the sparsification decision
             reward = self.reward_man.compute_reward(pruned_edge)

@@ -32,6 +32,7 @@ class RewardManager:
             self._setup_spearman()
         elif self.args.obj == "rrt":
             self._setup_rrt()
+            self._prior_pr = self._graph.get_page_ranks()
         else:
             raise Exception("Invalid Objective.")
             # By default use page rank
@@ -51,7 +52,7 @@ class RewardManager:
         else:
             #print("USING PR REWARD")
             # By default use page rank
-            cur_reward =self._compute_page_rank_reward()
+            cur_reward = self._compute_page_rank_reward()
         
         # Multiple by scale factor
         cur_reward = cur_reward
