@@ -10,7 +10,7 @@ from agents.storage import Experience, State
 
 class Environment:
     """Handles environment related tasks/management during an episode."""
-    def __init__(self, args, agent, graph, device="cpu"):
+    def __init__(self, args, agent, graph, device="cuda"):
         self.args = args        
         self.agent = agent
         self._graph = graph
@@ -37,7 +37,7 @@ class Environment:
         # Restore pruned edges to graph
 
         for node in self._removed_nodes:
-            self._graph.add_node(node)
+            self._graph.add_node(node[0], x=node[1], y=node[2])
         
         for edge in self._removed_edges:
             self._graph.add_edge(edge[0], edge[1])
@@ -117,7 +117,7 @@ class Environment:
         for e in self._graph._G.edges(node):
             self._removed_edges.add(e)
 
-        self._removed_nodes.add(node)
+        self._removed_nodes.add((node, self._graph._G.nodes[node]['x'], self._graph._G.nodes[node]['y']))
         self._graph.del_node(node)
 
         return node
@@ -278,6 +278,7 @@ class Environment:
             # Get edge to prune
             with torch.no_grad():
                 edge_idx = self.agent(state)
+                print("removed", edge_idx)
 
 
             # Prune the edge

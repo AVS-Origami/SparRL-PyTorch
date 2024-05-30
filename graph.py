@@ -41,12 +41,12 @@ class Graph:
         assert not self._G.has_edge(src_id, dst_id)
         self._G.add_edge(src_id, dst_id)
 
-    def add_node(self, src_id):
+    def add_node(self, src_id, x=0.0, y=0.0):
         if not isinstance(src_id, int):
             src_id = int(src_id)
 
         assert not self._G.has_node(src_id)
-        self._G.add_node(src_id)
+        self._G.add_node(src_id, x=x, y=y)
     
     def del_edge(self, src_id, dst_id):
         if not isinstance(src_id, int):
@@ -118,6 +118,7 @@ class Graph:
             size: number of samples.
         """
         return random.sample(list(self._G.nodes), size)
+        #return list(self._G.nodes)
 
     def copy(self):
         return Graph(self.args)

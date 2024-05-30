@@ -144,8 +144,8 @@ class RLAgent(Agent):
 
         torch.save(model_dict, self._model_file)
         self._sparrl_net.eval()
-        example = [[state.subgraph, state.global_stats, state.local_stats, state.mask, state.neighs]]
-        jit_save = torch.jit.trace(self._sparrl_net, example)
+        example = [[state.subgraph.to(device), state.global_stats.to(device), state.local_stats.to(device), state.mask.to(device), state.neighs.to(device)]]
+        jit_save = torch.jit.trace(self._sparrl_net, *example)
         jit_save.save(os.path.join(self.args.save_dir, "model.pt"))
 
         with open(self._train_dict_file, "w") as f:
@@ -222,18 +222,18 @@ class RLAgent(Agent):
 
             with torch.no_grad():
                 # Get the Q-value for the state, action pair
-                q_val = self._sparrl_net(self._ex_buffer[i].state)[self._ex_buffer[i].action]
+                q_val = self._sparrl_net(*self._ex_buffer[i].state.unpack())[self._ex_buffer[i].action]
                 
                 if self._ex_buffer[i].next_state is not None:
                     # Get the valid action for next state that maximizes the q-value
                     valid_actions = self._get_valid_edges(self._ex_buffer[i].next_state.subgraph[0])
-                    q_next = self._sparrl_net(self._ex_buffer[i].next_state)
+                    q_next = self._sparrl_net(*self._ex_buffer[i].next_state.unpack())
                     #print("q_next", q_next)
                     next_action = self._sample_action(q_next[valid_actions], argmax=True)
                     next_action = valid_actions[next_action] 
 
                     # Compute TD target based on target function q-value for next state
-                    q_next_target = self._sparrl_net_tgt(self._ex_buffer[i].next_state)[next_action]
+                    q_next_target = self._sparrl_net_tgt(*self._ex_buffer[i].next_state.unpack())[next_action]
                     td_target = self._reward_scaler.scale_reward(self._ex_buffer[i].reward) + self._ex_buffer[i].gamma *  q_next_target
                     # print("q_next_target",  self._sparrl_net_tgt(self._ex_buffer[i].next_state))
                     # print("td_target", td_target, "\n")
@@ -327,7 +327,7 @@ class RLAgent(Agent):
 
         # Select the q-value for every state
         actions = torch.tensor(actions, dtype=torch.int64, device=device)
-        q_vals_matrix = self._sparrl_net(states)
+        q_vals_matrix = self._sparrl_net(*states.unpack())
 
         q_vals = q_vals_matrix.gather(1, actions.unsqueeze(1)).squeeze(1)
 
@@ -341,10 +341,10 @@ class RLAgent(Agent):
         # Run policy on next states
         with torch.no_grad():
             q_next = self._sparrl_net(
-                next_states)
+                *next_states.unpack())
 
             q_next_target = self._sparrl_net_tgt(
-                next_states)
+                *next_states())
             
 
         # index used for getting the next nonempty next state
@@ -469,7 +469,7 @@ class RLAgent(Agent):
         batch_size = state.subgraph.shape[0]
 
         # Get the q-values for the state
-        q_vals = self._sparrl_net(state)
+        q_vals = self._sparrl_net(*state.unpack())
         # Sample an action (i.e., edge to prune)
         if batch_size > 1:
             action = []

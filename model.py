@@ -5,7 +5,7 @@ import math
 
 from transformer import Encoder
 from conf import *
-
+from agents.storage import State
 
 class NoisyLinear(nn.Module):
     def __init__(self, args, in_features, out_features):
@@ -72,6 +72,9 @@ class GAT(nn.Module):
 
     def forward(self, node_ids: torch.Tensor, neighs: torch.Tensor, mask: torch.Tensor):
         # Get initial embeddings
+        node_ids.to(device)
+        neighs.to(device)
+        mask.to(device)
         src_node_embs = self.node_embs(node_ids.unsqueeze(2))
         
         neigh_embs = self.node_embs(neighs)
@@ -152,6 +155,14 @@ class NodeEncoder(nn.Module):
         self.node_embs = self.node_embs.from_pretrained(pretrained_node_embs, freeze=True)
 
     def forward(self, state):
+        state = State(
+            state[0],
+            state[1],
+            state[2],
+            state[3],
+            state[4],
+        )
+            
         # Get initial node embeddings
         subgraph = state.subgraph
         local_stats = torch.cat((state.local_stats, state.global_stats.repeat(1, state.local_stats.shape[1], 1)), -1)
@@ -255,16 +266,21 @@ class SparRLNet(nn.Module):
         #self.q_fc_1.reset_noise()
         #self.q_fc_2.reset_noise()
 
-    def forward(self, state) -> torch.Tensor:
-        batch_size = state.subgraph.shape[0]
+    def forward(self, subgraph, global_stats, local_stats, mask, neighs) -> torch.Tensor:
+        # if isinstance(state, State):
+        #     state = [state.subgraph, state.global_stats, state.local_stats, state.mask, state.neighs]
+
+        state = [subgraph.to(device), global_stats.to(device), local_stats.to(device), mask.to(device), neighs.to(device)]
+
+        batch_size = subgraph.shape[0]
 
         # Create node embedding
         node_embs = self.node_enc(state)
 
         # Create edge embeddings
-        embs = self.edge_enc(node_embs)
+        #embs = self.edge_enc(node_embs)
 
-        q_vals = self.q_fc_3(embs)
+        q_vals = self.q_fc_3(node_embs)
         #print("q_vals", q_vals)
         if batch_size == 1:
             return q_vals.view(-1)

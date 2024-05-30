@@ -1,5 +1,6 @@
 import torch
 from dataclasses import dataclass
+from conf import *
 
 @dataclass
 class State:
@@ -8,6 +9,21 @@ class State:
     local_stats: torch.Tensor
     mask: torch.Tensor = None
     neighs: list = None
+
+    def unpack(self):
+        self.subgraph.to(device)
+        self.global_stats.to(device)
+        self.local_stats.to(device)
+        self.mask.to(device)
+        self.neighs.to(device)
+
+        return [
+            self.subgraph,
+            self.global_stats,
+            self.local_stats,
+            self.mask,
+            self.neighs
+        ]
 
 
 @dataclass
