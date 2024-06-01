@@ -344,7 +344,7 @@ class RLAgent(Agent):
                 *next_states.unpack())
 
             q_next_target = self._sparrl_net_tgt(
-                *next_states())
+                *next_states.unpack())
             
 
         # index used for getting the next nonempty next state

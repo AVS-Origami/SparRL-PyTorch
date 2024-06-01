@@ -82,7 +82,7 @@ class Environment:
         edge = [subgraph[0, 2*edge_idx], subgraph[0, 2*edge_idx + 1]]
 
         # Shift back to original node ids
-        #edge = (int(edge[0] - 1), int(edge[1] - 1))
+       #edge = (int(edge[0] - 1), int(edge[1] - 1))
         edge = (int(edge[0]), int(edge[1]))
 
         if self.args.obj == "spsp" and not self.args.eval:
@@ -223,7 +223,7 @@ class Environment:
             # TODO: Consider preprune using expert instead
             subgraph = self.sample_subgraph(num_preprune)
         else:
-            num_preprune = fixed_pct * num_edges
+            num_preprune = fixed_pct * self._graph.get_num_edges()
             subgraph = self.sample_subgraph(num_preprune)
 
         # Prune the edges
@@ -278,7 +278,7 @@ class Environment:
             # Get edge to prune
             with torch.no_grad():
                 edge_idx = self.agent(state)
-                print("removed", edge_idx)
+                #print("removed", edge_idx)
 
 
             # Prune the edge

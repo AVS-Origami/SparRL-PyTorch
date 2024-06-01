@@ -8,7 +8,7 @@ class State:
     global_stats: torch.Tensor
     local_stats: torch.Tensor
     mask: torch.Tensor = None
-    neighs: list = None
+    neighs: torch.Tensor = None
 
     def unpack(self):
         self.subgraph.to(device)
