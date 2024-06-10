@@ -41,12 +41,12 @@ class Graph:
         assert not self._G.has_edge(src_id, dst_id)
         self._G.add_edge(src_id, dst_id)
 
-    def add_node(self, src_id, x=0.0, y=0.0):
+    def add_node(self, src_id, x=0.0, y=0.0, c=0.0):
         if not isinstance(src_id, int):
             src_id = int(src_id)
 
         assert not self._G.has_node(src_id)
-        self._G.add_node(src_id, x=x, y=y)
+        self._G.add_node(src_id, x=x, y=y, c=c)
     
     def del_edge(self, src_id, dst_id):
         if not isinstance(src_id, int):
@@ -212,7 +212,7 @@ class Graph:
             pos[n[1]] = np.array([self._G.nodes[n[1]]['x'], self._G.nodes[n[1]]['y']])
 
         for n in self._G.nodes():
-            if not n in pos.keys():
+            if n not in pos.keys():
                 pos[n] = np.array([0.0, 0.0])
         
         nx.draw(self._G, pos, with_labels=False, node_size=5)
@@ -220,14 +220,15 @@ class Graph:
 
     def parse_tree(self, tree_file):
         G = nx.Graph()
-        G.add_node(0, x=0.0, y=0.0)
+        G.add_node(0, x=0.0, y=0.0, c=1.0)
         with open(tree_file) as tree:
             for line in tree:
                 ends = line.split('|')
-                (i, x, y) = tuple(map(float, ends[0].split(',')))
-                G.add_node(int(i), x=x, y=y)
+                (i, x, y, c) = tuple(map(float, ends[0].split(',')))
+                G.add_node(int(i), x=x, y=y, c=c)
                 a = int(ends[0].split(',')[0])
                 b = int(ends[1].split(',')[0])
                 G.add_edge(a, b)
 
+        #print(G.nodes(data=True))
         return G

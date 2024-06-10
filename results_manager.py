@@ -177,8 +177,11 @@ class ResultsManager:
             self.env.prune_node(edge_idx, state.subgraph)
         
         #print("E:", self.env._graph.get_num_edges())
-        return {self.get_final_reward(): copy.deepcopy(self.env._graph)}
-        #return self.get_final_reward()
+        if not self.args.train:
+            print("WHY ARE YOU HERE")
+            return {self.get_final_reward(): copy.deepcopy(self.env._graph)}
+        else:
+            return self.get_final_reward()
 
 
     def get_final_reward(self):

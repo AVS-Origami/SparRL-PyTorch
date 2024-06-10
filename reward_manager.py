@@ -4,6 +4,7 @@ from multiprocessing import Lock, Value
 from community_detection import CommunityDetection
 from scipy import stats
 import math
+import copy
 
 class RewardManager:
     """Manages the reward acquired by the agent."""
@@ -12,6 +13,8 @@ class RewardManager:
     def __init__(self, args, graph):
         self.args = args
         self._graph = graph
+        self._setup = False
+        #self._og_graph = copy.deepcopy(self._graph)
         self._reward_lock = Lock()
         # self._load_reward_data()
         self._reward_json = os.path.join(self.args.save_dir, "rewards.json")
@@ -32,14 +35,19 @@ class RewardManager:
             self._setup_spearman()
         elif self.args.obj == "rrt":
             self._setup_rrt()
-            self._prior_pr = self._graph.get_page_ranks()
+            if not self._setup:
+                self._last_tr = self.compute_tree_cost(self._graph)
+                self._og_tr = self._last_tr
+                self._setup = True
+            else:
+                self._last_tr = self._og_tr
         else:
             raise Exception("Invalid Objective.")
             # By default use page rank
             # Get the prior page rank scores before training
             self._prior_pr = self._graph.get_page_ranks()
     
-    def compute_reward(self, edge=None):
+    def compute_reward(self, graph, edge=None):
         if self.args.obj == "spsp":
             # Return reward for shortest path
             cur_reward = self._compute_spsp_reward()
@@ -49,6 +57,8 @@ class RewardManager:
         
         elif self.args.obj == "spearman":
             cur_reward = self._compute_spearman_reward()
+        elif self.args.obj == "rrt":
+            cur_reward = self._compute_rrt_reward(graph)
         else:
             #print("USING PR REWARD")
             # By default use page rank
@@ -103,6 +113,36 @@ class RewardManager:
         cur_ari = self._com_detect.ARI_louvain()
         reward = cur_ari - self._prev_ari
         self._prev_ari = cur_ari
+        return reward
+
+    def nearby(self, graph, node, radius):
+        nearby = []
+        for nod in graph._G.nodes():
+            if np.linalg.norm(
+                np.array([graph._G.nodes[node]['x'], graph._G.nodes[node]['y']]) - np.array([graph._G.nodes[nod]['x'], graph._G.nodes[nod]['y']])
+            ) <= radius:
+                nearby.append(nod)
+
+        return nearby
+
+    def compute_tree_cost(self, graph):
+        cost = 0
+        for node in graph._G.nodes():
+            n_inv = 2.0 / ((len(self.nearby(graph, node, 5)) + 1) * (len(list(graph._G.neighbors(node))) + 1))
+            delta = 1 if graph._G.nodes[node]['c'] else 0
+            if len(list(graph._G.neighbors(node))) >= 3:
+                delta = 0
+            #print(graph._G.nodes(data=True))
+            dist = np.linalg.norm(np.array([graph._G.nodes[node]['x'], graph._G.nodes[node]['y']]) - np.array([0.0, 0.0]))
+            d_inv = 1.0 / (dist + 1e-5)
+            cost += 11 * n_inv + 43 * delta + 3 * d_inv
+
+        return cost / len(list(graph._G.nodes))
+
+    def _compute_rrt_reward(self, graph):
+        cur_reward = self.compute_tree_cost(graph)
+        reward = self._last_tr - cur_reward
+        #self._last_tr = cur_reward
         return reward
 
     def edge_com_reward(self, edge):

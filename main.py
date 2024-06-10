@@ -29,7 +29,7 @@ def main(args):
     if args.eval:
         results_man.eval()
     else:
-        
+        print("HERE")
         # if args.expert_episodes > 0:
         #     expected_num_ep = num_expert_episodes(
         #         graph.get_num_edges(),
@@ -205,6 +205,8 @@ if __name__ == "__main__":
 
     eval_args.add_argument("--eval", action="store_true",
             help="Evaluate.")
+    eval_args.add_argument("--train", action="store_true",
+            help="Train.")
 
     mp_args = parser.add_argument_group("Multiprocess")    
     mp_args.add_argument("--workers", type=int, default=1,

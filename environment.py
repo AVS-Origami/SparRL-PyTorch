@@ -5,6 +5,7 @@ from scipy.stats import betabinom
 from reward_manager import RewardManager
 from conf import *
 from agents.storage import Experience, State
+import copy
 
 # Prevent high memory usage
 
@@ -37,10 +38,12 @@ class Environment:
         # Restore pruned edges to graph
 
         for node in self._removed_nodes:
-            self._graph.add_node(node[0], x=node[1], y=node[2])
+            self._graph.add_node(node[0], x=node[1], y=node[2], c=node[3])
         
         for edge in self._removed_edges:
             self._graph.add_edge(edge[0], edge[1])
+
+        #print(self._graph._G.nodes(data=True))
 
         self._removed_edges = set()
         self._removed_nodes = set()
@@ -117,7 +120,15 @@ class Environment:
         for e in self._graph._G.edges(node):
             self._removed_edges.add(e)
 
-        self._removed_nodes.add((node, self._graph._G.nodes[node]['x'], self._graph._G.nodes[node]['y']))
+        #print((node, self._graph._G.nodes[node]['x'], self._graph._G.nodes[node]['y']))
+        self._removed_nodes.add(
+            (
+                node,
+                self._graph._G.nodes[node]["x"],
+                self._graph._G.nodes[node]["y"],
+                self._graph._G.nodes[node]["c"],
+            )
+        )
         self._graph.del_node(node)
 
         return node
@@ -230,6 +241,14 @@ class Environment:
         for node in subgraph:
             for edge in self._graph._G.edges(node):
                 self._removed_edges.add(edge) # CHANGED BECAUSE SUBGRAPH CONTAINS NODES NOW
+            self._removed_nodes.add(
+                (
+                    node,
+                    self._graph._G.nodes[node]["x"],
+                    self._graph._G.nodes[node]["y"],
+                    self._graph._G.nodes[node]["c"],
+                )
+            )
             self._graph.del_node(node)  # CHANGED FROM EDGE TO NODE
 
         return num_preprune
@@ -253,7 +272,7 @@ class Environment:
         num_preprune = self.preprune(T)
 
         # Throw away prepruned reward
-        self.reward_man.compute_reward()
+        self.reward_man.compute_reward(self._graph)
         #print("INIT SPEARMAN: ", self.reward_man._prev_spearmanr)
         
         print("T", T)
@@ -285,7 +304,7 @@ class Environment:
             pruned_edge = self.prune_node(edge_idx, state.subgraph) # CHANGED TO PRUNE NODE
 
             # Compute the reward for the sparsification decision
-            reward = self.reward_man.compute_reward(pruned_edge)
+            reward = self.reward_man.compute_reward(self._graph, edge=pruned_edge)
 
             prev_state = state
 
