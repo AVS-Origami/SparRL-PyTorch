@@ -6,6 +6,7 @@ from reward_manager import RewardManager
 from conf import *
 from agents.storage import Experience, State
 import copy
+import torch
 
 # Prevent high memory usage
 
@@ -204,12 +205,14 @@ class Environment:
                 neighs[0, i, :len(neighs_list)] = torch.tensor(neighs_list[:self.args.max_neighbors], device=self._device)
                 mask[0, i, :len(neighs_list)] = 0
 
-
+        childs = torch.zeros(1, self.args.subgraph_len*2)
+        for node_id in self._graph._G.nodes():
+            childs[0, node_id] = self._graph._G.nodes[node_id]['c']
                     
         # # Don't mask out the global stats
         # mask[0, 0, 0, -1] = 0
         
-        return State(subgraph, global_stats, local_stats, mask, neighs)
+        return State(subgraph, global_stats, local_stats, mask, neighs, childs)
 
     def preprune(self, T: int, fixed_pct: float = None) -> int:
         """Preprune edges from the graph before an episode.

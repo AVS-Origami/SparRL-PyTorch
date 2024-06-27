@@ -41,6 +41,8 @@ class RewardManager:
                 self._setup = True
             else:
                 self._last_tr = self._og_tr
+        elif self.args.obj == "pr":
+            self._prior_pr = self._graph.get_page_ranks()
         else:
             raise Exception("Invalid Objective.")
             # By default use page rank
@@ -59,6 +61,8 @@ class RewardManager:
             cur_reward = self._compute_spearman_reward()
         elif self.args.obj == "rrt":
             cur_reward = self._compute_rrt_reward(graph)
+        elif self.args.obj == "pr":
+            cur_reward = self._compute_page_rank_reward()
         else:
             #print("USING PR REWARD")
             # By default use page rank
@@ -128,22 +132,23 @@ class RewardManager:
     def compute_tree_cost(self, graph):
         cost = 0
         for node in graph._G.nodes():
-            n_inv = 2.0 / ((len(self.nearby(graph, node, 5)) + 1) * (len(list(graph._G.neighbors(node))) + 1))
-            delta = 1 if graph._G.nodes[node]['c'] else 0
-            if len(list(graph._G.neighbors(node))) >= 3:
-                delta = 0
+            # n_inv = 2.0 / ((len(self.nearby(graph, node, 5)) + 1) * (len(list(graph._G.neighbors(node))) + 1))
+            # n_inv = 2.0 / (len(list(graph._G.neighbors(node))) + 1)
+            delta = graph._G.nodes[node]['c']
+            # if len(list(graph._G.neighbors(node))) >= 3:
+            #     delta = 0
             #print(graph._G.nodes(data=True))
-            dist = np.linalg.norm(np.array([graph._G.nodes[node]['x'], graph._G.nodes[node]['y']]) - np.array([0.0, 0.0]))
-            d_inv = 1.0 / (dist + 1e-5)
-            cost += 11 * n_inv + 43 * delta + 3 * d_inv
+            # dist = np.linalg.norm(np.array([graph._G.nodes[node]['x'], graph._G.nodes[node]['y']]) - np.array([0.0, 0.0]))
+            # d_inv = 1.0 / (dist + 1e-5)
+            cost += delta
 
-        return cost / len(list(graph._G.nodes))
+        return cost
 
     def _compute_rrt_reward(self, graph):
         cur_reward = self.compute_tree_cost(graph)
         reward = self._last_tr - cur_reward
         #self._last_tr = cur_reward
-        return reward
+        return -cur_reward
 
     def edge_com_reward(self, edge):
         if edge is None:

@@ -188,8 +188,7 @@ class ResultsManager:
         if self.args.obj == "spearman":
             return self.env.reward_man.compute_sparmanr()
         elif self.args.obj == "rrt":
-            import random
-            return random.random()
+            return self.env.reward_man._compute_rrt_reward(self.env._graph)
         elif self.args.obj == "com":
             return self.env.reward_man._com_detect.ARI_louvain()
         elif self.args.obj == "spsp":

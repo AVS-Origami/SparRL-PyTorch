@@ -127,15 +127,17 @@ class AgentManager:
         local_stats = torch.zeros(batch_size, self.args.subgraph_len * 2, NUM_LOCAL_STATS, device=device)
         neighs = torch.zeros(batch_size, self.args.subgraph_len*2, self.args.max_neighbors, device=device, dtype=torch.int32)
         mask = torch.ones(batch_size, self.args.subgraph_len*2, self.args.max_neighbors, 1, device=device)
+        childs = torch.zeros(batch_size, self.args.subgraph_len*2)
         for i, state in enumerate(states):
             subgraphs[i, :state.subgraph.shape[1]] = state.subgraph
             global_stats[i] = state.global_stats
             local_stats[i, :state.local_stats.shape[1]] = state.local_stats
             mask[i] = state.mask
             neighs[i] = state.neighs
+            childs[i] = state.childs
         
         
-        return State(subgraphs, global_stats, local_stats, mask, neighs)
+        return State(subgraphs, global_stats, local_stats, mask, neighs, childs)
 
     def run(self):
         # Run several batch of episodes

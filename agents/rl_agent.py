@@ -144,7 +144,16 @@ class RLAgent(Agent):
 
         torch.save(model_dict, self._model_file)
         self._sparrl_net.eval()
-        example = [[state.subgraph.to(device), state.global_stats.to(device), state.local_stats.to(device), state.mask.to(device), state.neighs.to(device)]]
+
+        example = [[
+            state.subgraph.to(device),
+            state.global_stats.to(device),
+            state.local_stats.to(device),
+            state.mask.to(device),
+            state.neighs.to(device),
+            state.childs.to(device)
+        ]]
+
         jit_save = torch.jit.trace(self._sparrl_net, *example)
         jit_save.save(os.path.join(self.args.save_dir, "model.pt"))
 
@@ -259,7 +268,7 @@ class RLAgent(Agent):
         local_stats = torch.zeros(self.args.batch_size, self.args.subgraph_len*2, NUM_LOCAL_STATS, device=device)
         neighs = torch.zeros(self.args.batch_size, self.args.subgraph_len*2, self.args.max_neighbors, device=device, dtype=torch.int32)
         masks = torch.ones(self.args.batch_size, self.args.subgraph_len*2, self.args.max_neighbors, 1, device=device)
-        
+        childs = torch.zeros(self.args.batch_size, self.args.subgraph_len*2, device=device)
         
         actions = []
         rewards = torch.zeros(self.args.batch_size, device=device)
@@ -268,6 +277,7 @@ class RLAgent(Agent):
         next_local_stats = torch.zeros(self.args.batch_size, self.args.subgraph_len*2, NUM_LOCAL_STATS, device=device)
         next_neighs = torch.zeros(self.args.batch_size, self.args.subgraph_len*2, self.args.max_neighbors, device=device, dtype=torch.int32)
         next_masks = torch.ones(self.args.batch_size, self.args.subgraph_len*2, self.args.max_neighbors, 1, device=device)
+        next_childs = torch.zeros(self.args.batch_size, self.args.subgraph_len * 2, device=device)
 
         next_state_mask = torch.zeros(self.args.batch_size, device=device, dtype=torch.bool)
         is_experts = torch.zeros(self.args.batch_size, dtype=torch.bool, device=device)
@@ -284,6 +294,7 @@ class RLAgent(Agent):
             local_stats[i, :ex.state.local_stats.shape[1]] = ex.state.local_stats
             subgraphs[i, :ex.state.subgraph.shape[1]], global_stats[i], local_stats[i, :ex.state.local_stats.shape[1]] = ex.state.subgraph, ex.state.global_stats, ex.state.local_stats
             neighs[i] = ex.state.neighs
+            childs[i] = ex.state.childs
 
             actions.append(ex.action)
             rewards[i] = self._reward_scaler.scale_reward(ex.reward)
@@ -299,8 +310,9 @@ class RLAgent(Agent):
                 # if ex.next_state.subgraph.shape[1]//2 < self.args.subgraph_len:
                     # Set edges that are null to 1 to mask out
                 next_masks[i] = ex.next_state.mask
+                next_childs[i] = ex.next_state.childs
 
-        states = State(subgraphs, global_stats, local_stats, masks, neighs)
+        states = State(subgraphs, global_stats, local_stats, masks, neighs, childs)
         
 
         # Get nonempty next states
@@ -309,7 +321,8 @@ class RLAgent(Agent):
             next_global_stats[next_state_mask],
             next_local_stats[next_state_mask],
             next_masks[next_state_mask],
-            next_neighs[next_state_mask])
+            next_neighs[next_state_mask],
+            next_childs[next_state_mask])
 
         next_masks = next_masks[next_state_mask]
         return states, actions, rewards, next_states, next_state_mask, is_experts, gammas

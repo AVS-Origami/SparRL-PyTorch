@@ -7,8 +7,9 @@ class State:
     subgraph: torch.Tensor
     global_stats: torch.Tensor
     local_stats: torch.Tensor
-    mask: torch.Tensor = None
-    neighs: torch.Tensor = None
+    mask: torch.Tensor
+    neighs: torch.Tensor
+    childs: torch.Tensor
 
     def unpack(self):
         self.subgraph.to(device)
@@ -16,13 +17,15 @@ class State:
         self.local_stats.to(device)
         self.mask.to(device)
         self.neighs.to(device)
+        self.childs.to(device)
 
         return [
             self.subgraph,
             self.global_stats,
             self.local_stats,
             self.mask,
-            self.neighs
+            self.neighs,
+            self.childs
         ]
 
 

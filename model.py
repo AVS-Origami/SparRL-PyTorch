@@ -161,6 +161,7 @@ class NodeEncoder(nn.Module):
             state[2],
             state[3],
             state[4],
+            state[5]
         )
             
         # Get initial node embeddings
@@ -266,11 +267,11 @@ class SparRLNet(nn.Module):
         #self.q_fc_1.reset_noise()
         #self.q_fc_2.reset_noise()
 
-    def forward(self, subgraph, global_stats, local_stats, mask, neighs) -> torch.Tensor:
+    def forward(self, subgraph, global_stats, local_stats, mask, neighs, childs) -> torch.Tensor:
         # if isinstance(state, State):
         #     state = [state.subgraph, state.global_stats, state.local_stats, state.mask, state.neighs]
 
-        state = [subgraph.to(device), global_stats.to(device), local_stats.to(device), mask.to(device), neighs.to(device)]
+        state = [subgraph.to(device), global_stats.to(device), local_stats.to(device), mask.to(device), neighs.to(device), childs.to(device)]
 
         batch_size = subgraph.shape[0]
 
